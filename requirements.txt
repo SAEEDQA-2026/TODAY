@@ -1,0 +1,6 @@
+streamlit
+pandas
+plotly
+hijri-converter
+xlsxwriter
+openpyxl
