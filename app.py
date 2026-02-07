@@ -8,18 +8,18 @@ import os
 import json
 import streamlit.components.v1 as components
 
-# --- 1. الإعدادات والبيانات ---
-st.set_page_config(page_title="المستشار المالي 2026 - v32", layout="wide")
+# --- 1. الإعدادات وتصنيفات النظام ---
+st.set_page_config(page_title="المستشار المالي 2026 - v33", layout="wide")
 
 DB_FILE = "finance_master_2026.csv"
 CONFIG_FILE = "app_config.json"
 
 DAILY_CATS = ["بنزين", "ماء", "الزيت", "الغاز", "السيارة", "تصليح", "فواتير", "مقاضي البيت", "مقاهي", "خضاروفواكهه", "مخالفات", "مقاضي البنات", "المستشفيات والصيدليات", "مطاعم", "ترفيه وحجوزات", "خدمات خارجية", "قطات", "عناية", "أخرى"]
 INCOME_CATS = ["الراتب", "حساب المواطن", "الدعم السكني", "الاسهم", "مسترجعات", "حقوق خاصة", "العمالة", "انتداب", "اركابات", "أخرى"]
-# قائمة المصروفات الثابتة المعدلة (حذف القروض)
-FIXED_CATS = ["القرض العقاري", "امي", "كفالة", "الاعاشة"]
+# التعديل رقم 1: استعادة القرض الشخصي في القائمة
+FIXED_CATS = ["القرض الشخصي", "القرض العقاري", "امي", "كفالة", "الاعاشة"]
 
-# وظائف حفظ الإعدادات المستمرة
+# وظائف حفظ الإعدادات (للهدف والبيانات المستمرة)
 def load_config():
     if os.path.exists(CONFIG_FILE):
         try:
@@ -89,7 +89,7 @@ def get_hijri():
     days = {"Saturday": "السبت", "Sunday": "الأحد", "Monday": "الإثنين", "Tuesday": "الثلاثاء", "Wednesday": "الأربعاء", "Thursday": "الخميس", "Friday": "الجمعة"}
     return days.get(today.strftime("%A"), ""), f"{today.year}/{today.month:02d}/{today.day:02d} | {h.year}/{h.month:02d}/{h.day:02d}"
 
-# --- 4. الهيدر والساعة الحية ---
+# --- 4. التنسيقات البصرية والهيدر ---
 d_name, d_full = get_hijri()
 st.markdown(f"""
     <style>
@@ -103,10 +103,13 @@ st.markdown(f"""
         border: 2px solid #10b981; color: white; padding: 20px; border-radius: 15px; text-align: center;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
     }}
+    .metric-container {{
+        background-color: #1e293b; padding: 15px; border-radius: 12px; border: 1px solid #334155; text-align: center;
+    }}
     </style>
     <div style="background-color:#0f172a; padding:20px; border-radius:15px; text-align:center; color:white; border-bottom: 5px solid #3b82f6;">
         <h1 style="margin:0; font-size: 55px; font-weight: 900;">{d_name}</h1>
-        <div id="live_clock_v32" style="font-size: 45px; color: #3b82f6; font-weight: bold; font-family: monospace; margin: 10px 0;">00:00:00</div>
+        <div id="live_clock_v33" style="font-size: 45px; color: #3b82f6; font-weight: bold; font-family: monospace; margin: 10px 0;">00:00:00</div>
         <h3 style="margin:0; opacity:0.8;">{d_full}</h3>
     </div>
 """, unsafe_allow_html=True)
@@ -115,20 +118,20 @@ components.html("""
     <script>
     function update() {
         const now = new Date();
-        window.parent.document.getElementById('live_clock_v32').innerHTML = now.toLocaleTimeString('en-GB', { hour12: false });
+        window.parent.document.getElementById('live_clock_v33').innerHTML = now.toLocaleTimeString('en-GB', { hour12: false });
     }
     setInterval(update, 1000); update();
     </script>
 """, height=0)
 
-# --- 5. التنقل والبيانات ---
+# --- 5. منطق البيانات والتبويبات ---
 df = st.session_state.df
 if not df.empty:
     df['دورة_الميزانية'] = df['التاريخ'].apply(get_fiscal_cycle)
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 الرئيسية والشهرية", "🛒 مصروف يومي", "💰 دخل وثوابت", "🔄 المقارنات اليومية", "⚙️ السجلات والإدارة"])
 
-# --- Tab 1: الرئيسية ---
+# --- Tab 1: الرئيسية (ملخص وتحليل) ---
 with tab1:
     if not df.empty:
         total_in_all = df[df['النوع'].isin(['دخل', 'الدخل'])]['المبلغ'].sum()
@@ -143,18 +146,19 @@ with tab1:
         m_exp = curr_df[~curr_df['النوع'].isin(['دخل', 'الدخل'])]['المبلغ'].sum()
         m_surplus = m_inc - m_exp
         
-        # الألوان الديناميكية
+        # التعديل رقم 2: وضوح النصوص والألوان التفاعلية
         color_surplus = "#10b981" if m_surplus >= 0 else "#ef4444"
         color_net = "#10b981" if actual_net_surplus >= 0 else "#ef4444"
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("إجمالي دخل الشهر", f"{m_inc:,.2f}")
-        c2.metric("مصروفات الشهر", f"{m_exp:,.2f}")
-        
+        with c1:
+            st.markdown(f"<div class='metric-container'><p style='margin:0; font-size:16px; color:#94a3b8;'>إجمالي دخل الشهر</p><h2 style='color:white; margin:0;'>{m_inc:,.2f}</h2></div>", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"<div class='metric-container'><p style='margin:0; font-size:16px; color:#94a3b8;'>مصروفات الشهر</p><h2 style='color:white; margin:0;'>{m_exp:,.2f}</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown(f"<div style='text-align:center; padding:10px; background:#1e293b; border-radius:10px;'><p style='margin:0; font-size:14px; opacity:0.8;'>المتبقي الشهري</p><h2 style='color:{color_surplus}; margin:0;'>{m_surplus:,.2f}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-container'><p style='margin:0; font-size:16px; color:#94a3b8;'>المتبقي الشهري</p><h2 style='color:{color_surplus}; margin:0; font-weight:900;'>{m_surplus:,.2f}</h2></div>", unsafe_allow_html=True)
         with c4:
-            st.markdown(f"<div style='text-align:center; padding:10px; background:#1e293b; border-radius:10px;'><p style='margin:0; font-size:14px; opacity:0.8;'>📈 صافي مدخرات 2026</p><h2 style='color:{color_net}; margin:0;'>{actual_net_surplus:,.2f}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric-container'><p style='margin:0; font-size:16px; color:#94a3b8;'>📈 صافي مدخرات 2026</p><h2 style='color:{color_net}; margin:0; font-weight:900;'>{actual_net_surplus:,.2f}</h2></div>", unsafe_allow_html=True)
 
         st.divider()
         st.write("### 📈 إحصائيات الذروة لهذا الشهر")
@@ -170,13 +174,26 @@ with tab1:
                 st.markdown(f"<div class='stat-card-min'><h1 style='margin:0;'>🔻</h1><h3>أدنى صرف يومي</h3><h2>{daily_spend.min():,.2f} ر.س</h2><p>بتاريخ: {min_day}</p></div>", unsafe_allow_html=True)
 
         st.divider()
+        # التعديل رقم 5: إظهار التاريخ داخل الأيقونة بالأسفل
         st.write("### 🛠️ الخدمات والهدف المالي")
         col_w, col_g, col_o, col_goal = st.columns(4)
         
         for name, icon, col in [("ماء", "💧", col_w), ("الغاز", "🔥", col_g), ("الزيت", "🛢️", col_o)]:
-            val = curr_df[curr_df['التصنيف'] == name]['المبلغ'].sum()
+            item_entries = curr_df[curr_df['التصنيف'] == name].sort_values('التاريخ', ascending=False)
+            val = item_entries['المبلغ'].sum()
+            last_date = item_entries.iloc[0]['التاريخ'].strftime('%Y-%m-%d') if not item_entries.empty else "---"
+            
             with col:
-                st.markdown(f"<div style='text-align:center; padding:20px; background:#1e293b; border-radius:15px; border:3px solid #3b82f6; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);'><h1 style='font-size: 50px; margin:0;'>{icon}</h1><h3 style='color:#3b82f6; margin:10px 0;'>{name}</h3><h2 style='color:white; margin:0;'>{val:,.2f}</h2></div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                    <div style='text-align:center; padding:15px; background:#1e293b; border-radius:15px; border:3px solid #3b82f6;'>
+                        <h1 style='font-size: 50px; margin:0;'>{icon}</h1>
+                        <h3 style='color:#3b82f6; margin:5px 0;'>{name}</h3>
+                        <h2 style='color:white; margin:0;'>{val:,.2f}</h2>
+                        <div style='background:rgba(59, 130, 246, 0.1); margin-top:10px; border-radius:5px; padding:2px;'>
+                            <p style='color:#94a3b8; font-size:12px; margin:0;'>📅 {last_date}</p>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
                 with st.popover(f"إضافة {name}"):
                     e_d = st.date_input(f"تاريخ {name}", date.today(), key=f"d_{name}")
                     e_a = st.number_input(f"المبلغ", key=f"a_{name}")
@@ -186,24 +203,29 @@ with tab1:
                         st.session_state.df = pd.concat([st.session_state.df, new], ignore_index=True); save_data(st.session_state.df); st.rerun()
 
         with col_goal:
+            # التعديل رقم 4: أيقونة حفظ الهدف الادخاري
             current_goal = config.get("goal", 5000)
-            new_goal = st.number_input("🎯 حدد هدف الادخار المستمر:", value=current_goal, step=500)
-            if new_goal != current_goal:
-                config["goal"] = new_goal
-                save_config(config)
+            c_g_1, c_g_2 = st.columns([4, 1])
+            with c_g_1:
+                new_goal = st.number_input("🎯 حدد هدف الادخار:", value=current_goal, step=500, label_visibility="collapsed")
+            with c_g_2:
+                if st.button("💾", help="حفظ الهدف بشكل دائم"):
+                    config["goal"] = new_goal
+                    save_config(config)
+                    st.toast("تم حفظ الهدف الادخاري!")
             
-            goal_color = "#10b981" if m_surplus >= new_goal else "#ef4444"
-            st.markdown(f"<div style='text-align:center; padding:20px; background:#0f172a; border-radius:15px; border:4px solid {goal_color};'><h3 style='margin:0; color:white;'>تحقيق الهدف</h3><h2 style='color:{goal_color}; margin:10px 0;'>{m_surplus:,.2f} / {new_goal:,.2f}</h2></div>", unsafe_allow_html=True)
+            goal_color = "#10b981" if m_surplus >= current_goal else "#ef4444"
+            st.markdown(f"<div style='text-align:center; padding:10px; background:#0f172a; border-radius:15px; border:4px solid {goal_color};'><h3 style='margin:0; font-size:14px; color:white;'>تحقيق الهدف</h3><h2 style='color:{goal_color}; margin:0;'>{m_surplus:,.2f} / {current_goal:,.2f}</h2></div>", unsafe_allow_html=True)
 
         st.divider()
-        st.write(f"### 📊 تحليل مصروفات {sel_cycle}")
+        st.write(f"### 📊 تحليل وتفاصيل {sel_cycle}")
         cp, cl = st.columns([1, 1.5])
         with cp:
             exp_only = curr_df[~curr_df['النوع'].isin(['دخل', 'الدخل'])]
             if not exp_only.empty:
                 st.plotly_chart(px.pie(exp_only, values='المبلغ', names='التصنيف', hole=0.5, template="plotly_dark"), use_container_width=True)
         with cl:
-            st.write("📑 سجل العمليات (الأحدث أولاً):")
+            st.write("📑 سجل العمليات للشهر:")
             st.dataframe(curr_df[['التاريخ', 'التصنيف', 'النوع', 'المبلغ', 'التفاصيل']].sort_values('التاريخ', ascending=False), use_container_width=True)
     else:
         st.info("ابدأ بإضافة بياناتك الأولى لعام 2026.")
@@ -211,23 +233,35 @@ with tab1:
 # --- Tab 4: المقارنات اليومية ---
 with tab4:
     if not df.empty:
-        st.subheader("🔄 شارت تتبع العناصر التفاعلي")
+        st.subheader("🔄 تتبع تغير العناصر")
         exp_all = df[~df['النوع'].isin(['دخل', 'الدخل'])].copy()
         target_cat = st.selectbox("اختر العنصر للتتبع:", sorted(exp_all['التصنيف'].unique()))
         
-        item_df = exp_all[exp_all['التصنيف'] == target_cat].copy()
-        # شارت خطي متغير (Interactive Spline)
-        fig_daily = px.line(item_df.sort_values('التاريخ'), x='التاريخ', y='المبلغ', color='دورة_الميزانية',
-                            markers=True, line_shape="spline", title=f"📈 مسار صرف {target_cat} الزمني",
-                            template="plotly_dark")
-        fig_daily.update_traces(marker=dict(size=10))
-        st.plotly_chart(fig_daily, use_container_width=True)
+        item_df = exp_all[exp_all['التصنيف'] == target_cat].copy().sort_values('التاريخ')
+        if not item_df.empty:
+            # التعديل رقم 3: شارت خطي متصل مع علامات القمة والقاع
+            fig_daily = px.line(item_df, x='التاريخ', y='المبلغ', color='دورة_الميزانية',
+                                markers=True, line_shape="spline", title=f"📈 مسار صرف {target_cat} الزمني",
+                                template="plotly_dark")
+            
+            # تحديد أعلى قمة وأدنى قاع
+            max_val = item_df['المبلغ'].max()
+            min_val = item_df['المبلغ'].min()
+            max_pts = item_df[item_df['المبلغ'] == max_val]
+            min_pts = item_df[item_df['المبلغ'] == min_val]
+            
+            fig_daily.add_scatter(x=max_pts['التاريخ'], y=max_pts['المبلغ'], mode='markers', marker=dict(color='yellow', size=15, symbol='star'), name='أعلى قمة')
+            fig_daily.add_scatter(x=min_pts['التاريخ'], y=min_pts['المبلغ'], mode='markers', marker=dict(color='orange', size=15, symbol='triangle-down'), name='أدنى قاع')
+
+            st.plotly_chart(fig_daily, use_container_width=True)
+        else:
+            st.warning("لا توجد بيانات كافية.")
 
 # --- Tab 3: دخل وثوابت ---
 with tab3:
-    col_i, col_f = st.columns(2)
-    with col_i:
-        with st.form("inc_v32"):
+    ci, cf = st.columns(2)
+    with ci:
+        with st.form("inc_v33"):
             st.subheader("💰 تسجيل دخل")
             i_date = st.date_input("تاريخ الاستلام", date.today())
             i_cat = st.selectbox("المصدر", INCOME_CATS)
@@ -235,9 +269,9 @@ with tab3:
             if st.form_submit_button("حفظ"):
                 new = pd.DataFrame([{"التاريخ": pd.to_datetime(i_date), "اليوم": d_name, "النوع": "دخل", "التصنيف": i_cat, "المبلغ": i_amt}])
                 st.session_state.df = pd.concat([st.session_state.df, new], ignore_index=True); save_data(st.session_state.df); st.rerun()
-    with col_f:
-        with st.form("fix_v32"):
-            st.subheader("🏠 مصروف ثابت (قائمة محدثة)")
+    with cf:
+        with st.form("fix_v33"):
+            st.subheader("🏠 مصروف ثابت")
             f_date = st.date_input("تاريخ المصروف", date.today())
             f_cat = st.selectbox("النوع", FIXED_CATS)
             f_amt = st.number_input("المبلغ")
@@ -250,26 +284,26 @@ with tab5:
     st.subheader("⚙️ إدارة السجلات")
     col_u, col_d = st.columns(2)
     with col_u:
-        up = st.file_uploader("📥 استيراد ودمج", type=['csv', 'xlsx'])
+        up = st.file_uploader("📥 استيراد ودمج ملفات", type=['csv', 'xlsx'])
         if up:
             try:
                 n_df = pd.read_csv(up) if up.name.endswith('.csv') else pd.read_excel(up)
                 st.session_state.df = pd.concat([st.session_state.df, n_df], ignore_index=True)
                 st.session_state.df['التاريخ'] = pd.to_datetime(st.session_state.df['التاريخ'], errors='coerce')
                 st.session_state.df = st.session_state.df[st.session_state.df['التاريخ'] >= '2025-12-26']
-                save_data(st.session_state.df); st.success("تم الدمج!"); st.rerun()
-            except: st.error("خطأ في الملف!")
+                save_data(st.session_state.df); st.success("تم الدمج بنجاح!"); st.rerun()
+            except: st.error("خطأ في قراءة الملف!")
     with col_d:
-        st.download_button("📤 تصدير البيانات", df.to_csv(index=False).encode('utf-8-sig'), "finance_2026_v32.csv")
+        st.download_button("📤 تصدير بيانات 2026", df.to_csv(index=False).encode('utf-8-sig'), "finance_v33_final.csv")
 
     st.divider()
-    edited = st.data_editor(st.session_state.df, num_rows="dynamic", use_container_width=True, key="ed_v32")
-    if st.button("💾 حفظ التعديلات"):
+    edited = st.data_editor(st.session_state.df, num_rows="dynamic", use_container_width=True, key="ed_v33")
+    if st.button("💾 حفظ كافة التعديلات"):
         st.session_state.df = edited
-        save_data(edited); st.success("تم التحديث!"); st.rerun()
+        save_data(edited); st.success("تم التحديث والحفظ!"); st.rerun()
 
 with tab2:
-    with st.form("d_v32"):
+    with st.form("d_v33"):
         st.subheader("🛒 تسجيل مصروف يومي")
         c1, c2, c3, c4 = st.columns(4)
         d_date = c1.date_input("التاريخ", date.today())
