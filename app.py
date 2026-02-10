@@ -8,7 +8,7 @@ import io, os, json
 import streamlit.components.v1 as components
 
 # --- 1. الإعدادات ---
-st.set_page_config(page_title="المستشار المالي 2026 - v61", layout="wide")
+st.set_page_config(page_title="المستشار المالي 2026 - Final", layout="wide")
 
 DB_FILE = "finance_master_2026.csv"
 CONFIG_FILE = "app_config_persistent.json"
@@ -79,7 +79,7 @@ def save_data(df): df.to_csv(DB_FILE, index=False, encoding='utf-8-sig')
 
 if 'df' not in st.session_state: st.session_state.df = load_data()
 
-# --- 4. الستايل ---
+# --- 4. الستايل (CSS المعدل) ---
 st.markdown("""
 <style>
     /* توحيد ارتفاع البطاقات */
@@ -100,20 +100,20 @@ st.markdown("""
     .text-content { text-align: left; width: 100%; }
     .card-title { color: #000000; font-size: 16px; font-weight: 900; margin-bottom: 2px; text-transform: uppercase; }
     
+    /* زيادة سماكة الخط (Bold Extra) */
     .val-stroke-white { 
         color: #ffffff !important; font-size: 32px !important; font-weight: 900 !important;
-        text-shadow: 2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 1px 1px #000, -1px -1px #000;
+        text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
     }
     .val-stroke-green { 
         color: #22c55e !important; font-size: 32px !important; font-weight: 900 !important;
-        text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+        text-shadow: 1.5px 1.5px 0 #000, -1px -1px 0 #000;
     }
     .val-stroke-red { 
         color: #ef4444 !important; font-size: 32px !important; font-weight: 900 !important;
-        text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+        text-shadow: 1.5px 1.5px 0 #000, -1px -1px 0 #000;
     }
 
-    /* التنبيه - تم فصله لضمان عدم الظهور */
     .warn-badge {
         background-color: #ef4444; color: white; padding: 2px 6px; 
         border-radius: 4px; font-size: 11px; font-weight: bold;
@@ -121,10 +121,12 @@ st.markdown("""
     }
     @keyframes blink { 50% { opacity: 0; } }
 
+    /* موازنة الخدمات والهدف */
     .svc-box { 
         background: #1e293b; padding: 10px; border-radius: 15px; 
         border: 2px solid #3b82f6; text-align: center; 
-        height: 140px; display: flex; flex-direction: column; justify-content: center;
+        height: 140px;
+        display: flex; flex-direction: column; justify-content: center; align-items: center; /* توسيط تام */
     }
     .note-text { color: #ffffff; font-weight: 900; font-size: 14px; margin-top: 5px; line-height: 1.2; }
 </style>
@@ -183,57 +185,22 @@ with tabs[0]:
                 </div>
             </div>""", unsafe_allow_html=True)
             
-        # المتبقي - (تم إصلاح الكود الشرطي هنا بدقة)
         with c3:
             cls = "val-stroke-green" if m_rem >= 0 else "val-stroke-red"
-            # بناء النص بناءً على الشرط لمنع طباعة div فارغ
             if m_rem < 0:
-                html_content = f"""
-                <div class='card-container'>
-                    <div class='card-icon'>⚖️</div>
-                    <div class='text-content'>
-                        <div class='card-title'>المتبقي الشهري</div>
-                        <div class='{cls}'>{m_rem:,.2f}</div>
-                        <div class='warn-badge'>⚠️ عجز!</div>
-                    </div>
-                </div>"""
+                st.markdown(f"""<div class='card-container'><div class='card-icon'>⚖️</div><div class='text-content'><div class='card-title'>المتبقي الشهري</div><div class='{cls}'>{m_rem:,.2f}</div><div class='warn-badge'>⚠️ عجز!</div></div></div>""", unsafe_allow_html=True)
             else:
-                html_content = f"""
-                <div class='card-container'>
-                    <div class='card-icon'>⚖️</div>
-                    <div class='text-content'>
-                        <div class='card-title'>المتبقي الشهري</div>
-                        <div class='{cls}'>{m_rem:,.2f}</div>
-                    </div>
-                </div>"""
-            st.markdown(html_content, unsafe_allow_html=True)
+                st.markdown(f"""<div class='card-container'><div class='card-icon'>⚖️</div><div class='text-content'><div class='card-title'>المتبقي الشهري</div><div class='{cls}'>{m_rem:,.2f}</div></div></div>""", unsafe_allow_html=True)
             
-        # صافي المدخرات - (تم إصلاح الكود الشرطي هنا بدقة)
         with c4:
             cls_n = "val-stroke-green" if net_savings >= 0 else "val-stroke-red"
             if net_savings < 0:
-                html_content_n = f"""
-                <div class='card-container'>
-                    <div class='card-icon'>🏦</div>
-                    <div class='text-content'>
-                        <div class='card-title'>صافي المدخرات</div>
-                        <div class='{cls_n}'>{net_savings:,.2f}</div>
-                        <div class='warn-badge'>⚠️ سالب!</div>
-                    </div>
-                </div>"""
+                st.markdown(f"""<div class='card-container'><div class='card-icon'>🏦</div><div class='text-content'><div class='card-title'>صافي المدخرات</div><div class='{cls_n}'>{net_savings:,.2f}</div><div class='warn-badge'>⚠️ سالب!</div></div></div>""", unsafe_allow_html=True)
             else:
-                html_content_n = f"""
-                <div class='card-container'>
-                    <div class='card-icon'>🏦</div>
-                    <div class='text-content'>
-                        <div class='card-title'>صافي المدخرات</div>
-                        <div class='{cls_n}'>{net_savings:,.2f}</div>
-                    </div>
-                </div>"""
-            st.markdown(html_content_n, unsafe_allow_html=True)
+                st.markdown(f"""<div class='card-container'><div class='card-icon'>🏦</div><div class='text-content'><div class='card-title'>صافي المدخرات</div><div class='{cls_n}'>{net_savings:,.2f}</div></div></div>""", unsafe_allow_html=True)
 
         st.divider()
-        # الخدمات
+        # الخدمات والهدف (توازن تام)
         cw, cg, co, cgl = st.columns(4)
         for name, icon, col in [("ماء", "💧", cw), ("الغاز", "🔥", cg), ("الزيت", "🛢️", co)]:
             svc_data = config.get("services", {}).get(name, {"date": "---", "note": "---"})
@@ -243,7 +210,7 @@ with tabs[0]:
                     <div class='note-text'>📅 {svc_data['date']}<br>📝 {svc_data['note']}</div>
                 </div>""", unsafe_allow_html=True)
                 with st.popover(f"تعديل {name}"):
-                    d_n = st.date_input("تاريخ", date.today(), key=f"d_{name}")
+                    d_n = st.date_input("التاريخ", date.today(), key=f"d_{name}")
                     n_n = st.text_input("تفاصيل", value=svc_data['note'], key=f"n_{name}")
                     if st.button("حفظ الملحوظة", key=f"b_{name}"):
                         if "services" not in config: config["services"] = {}
@@ -260,7 +227,6 @@ with tabs[0]:
                 if st.button("حفظ الهدف"): config["goal"] = new_g; save_config(config); st.rerun()
 
         st.divider()
-        # مؤشرات الأداء
         daily_spend = curr_df[~curr_df['النوع'].isin(['دخل', 'الدخل'])].groupby(curr_df['التاريخ'].dt.date)['المبلغ'].sum()
         ch, cl, cz = st.columns(3)
         start_d, end_d = get_cycle_range(sel_cycle)
@@ -282,10 +248,11 @@ with tabs[0]:
                 st.plotly_chart(px.pie(curr_df[~curr_df['النوع'].isin(['دخل', 'الدخل'])], values='المبلغ', names='التصنيف', hole=0.5, template="plotly_dark"), use_container_width=True)
         with cl: st.dataframe(curr_df.sort_values('التاريخ', ascending=False), use_container_width=True)
 
-# --- Tab 2: إضافة مصروفات متعددة ---
+# --- Tab 2: إضافة مصروفات متعددة (مع مسح تلقائي) ---
 with tabs[1]:
     st.subheader("🛒 تسجيل مصروفات متعددة (شامل)")
-    with st.form("bulk_expense_form"):
+    # استخدام خاصية clear_on_submit=True لمسح البيانات بعد الحفظ
+    with st.form("bulk_expense_form", clear_on_submit=True):
         col_date, col_submit = st.columns([1, 3])
         with col_date: entry_date = st.date_input("تاريخ العمليات", date.today())
         st.divider()
@@ -301,10 +268,10 @@ with tabs[1]:
                     new_rows.append({"التاريخ": pd.to_datetime(entry_date), "اليوم": d_name, "النوع": "مصروف", "التصنيف": cat, "المبلغ": amount, "التفاصيل": "إدخال متعدد"})
             if new_rows:
                 st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame(new_rows)], ignore_index=True)
-                save_data(st.session_state.df); st.success(f"✅ تم إضافة {len(new_rows)} عمليات بنجاح!"); st.rerun()
+                save_data(st.session_state.df); st.success(f"✅ تم إضافة {len(new_rows)} عمليات بنجاح! وتم تصفير الخانات."); st.rerun()
             else: st.warning("⚠️ الرجاء تعبئة خانة واحدة على الأقل.")
 
-# --- Tab 4: المقارنات (أسهم سوداء عريضة) ---
+# --- Tab 4: المقارنات (أسهم سوداء) ---
 with tabs[3]:
     if not df.empty:
         st.subheader("📈 مسار الترند (Trend Line)")
@@ -319,7 +286,6 @@ with tabs[3]:
             mx = item_df['المبلغ'].max(); mn = item_df['المبلغ'].min()
             mx_row = item_df[item_df['المبلغ'] == mx].iloc[0]; mn_row = item_df[item_df['المبلغ'] == mn].iloc[0]
             
-            # أسهم سوداء عريضة جداً (تصحيح اللون والسمك)
             fig.add_annotation(x=mx_row['التاريخ'], y=mx, text=f"<b>قمة: {mx:,.2f}</b>", showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=3, arrowcolor="black", ax=0, ay=-60, font=dict(color="black", size=16, family="Arial Black"), bgcolor="white", bordercolor="black", borderwidth=2)
             fig.add_annotation(x=mn_row['التاريخ'], y=mn, text=f"<b>قاع: {mn:,.2f}</b>", showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=3, arrowcolor="black", ax=0, ay=60, font=dict(color="black", size=16, family="Arial Black"), bgcolor="white", bordercolor="black", borderwidth=2)
             
@@ -328,6 +294,7 @@ with tabs[3]:
 
         st.divider()
         st.subheader("📋 جدول المقارنة")
+        st.info("يمكنك استخدام الأسهم للتنقل داخل الجدول")
         pivot = df.pivot_table(index='التصنيف', columns='دورة_الميزانية', values='المبلغ', aggfunc='sum').fillna(0)
         sel = st.multiselect("حدد العناصر:", pivot.index.tolist(), default=pivot.index.tolist()[:10])
         if sel: st.dataframe(pivot.loc[sel].style.format("{:,.2f}"), use_container_width=True)
@@ -349,14 +316,14 @@ with tabs[4]:
     ed = st.data_editor(st.session_state.df, num_rows="dynamic", use_container_width=True)
     if st.button("💾 حفظ"): st.session_state.df = ed; save_data(ed); st.success("تم!"); st.rerun()
 
-# --- إدخال الدخل والثابت ---
+# --- إدخال الدخل والثابت (مسح تلقائي) ---
 with tabs[2]:
     c1, c2 = st.columns(2)
     with c1:
-        with st.form("i"):
+        with st.form("i", clear_on_submit=True):
             st.subheader("💰 دخل"); d=st.date_input("تاريخ"); c=st.selectbox("مصدر", INCOME_CATS); a=st.number_input("مبلغ")
             if st.form_submit_button("حفظ"): st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([{"التاريخ":pd.to_datetime(d),"اليوم":d_name,"النوع":"دخل","التصنيف":c,"المبلغ":a}])], ignore_index=True); save_data(st.session_state.df); st.rerun()
     with c2:
-        with st.form("f"):
+        with st.form("f", clear_on_submit=True):
             st.subheader("🏠 ثابت"); d=st.date_input("تاريخ"); c=st.selectbox("نوع", FIXED_CATS); a=st.number_input("مبلغ")
             if st.form_submit_button("حفظ"): st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([{"التاريخ":pd.to_datetime(d),"اليوم":d_name,"النوع":"مصروفات ثابتة","التصنيف":c,"المبلغ":a}])], ignore_index=True); save_data(st.session_state.df); st.rerun()
