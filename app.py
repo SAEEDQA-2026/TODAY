@@ -8,7 +8,7 @@ import io, os, json
 import streamlit.components.v1 as components
 
 # --- 1. الإعدادات ---
-st.set_page_config(page_title="المستشار المالي 2026 - v66 Backup Plus", layout="wide")
+st.set_page_config(page_title="المستشار المالي 2026 - v67", layout="wide")
 
 DB_FILE = "finance_master_2026.csv"
 CONFIG_FILE = "app_config_persistent.json"
@@ -17,7 +17,10 @@ DAILY_CATS = ["بنزين", "ماء", "الزيت", "الغاز", "السيار�
 INCOME_CATS = ["الراتب", "حساب المواطن", "الدعم السكني", "الاسهم", "مسترجعات", "حقوق خاصة", "العمالة", "انتداب", "اركابات", "أخرى"]
 FIXED_CATS = ["القرض الشخصي", "القرض", "القرض العقاري", "امي", "كفالة", "الاعاشة"]
 
-# --- دوال الحفظ والتحميل (محسنة للملحوظات والأهداف) ---
+# القائمة المخصصة لتبويب المقارنات والترند كما طلبت
+CUSTOM_COMPARE_LIST = ["أمي", "الاعاشة", "اركابات", "الاسهم", "الدعم السكني", "الراتب", "السيارة", "العمالة", "القرض الشخصي", "القرض العقاري", "المستشفيات والصيدليات", "بنزين", "ترفيه وحجوزات", "تصليح", "انتداب", "حساب المواطن", "خدمات خارجية", "خضار وفواكه", "ديون", "زكاة", "عناية", "فواتير", "قطات", "كفالة", "مخالفات", "مسترجعات", "مطاعم", "مقاضي البيت", "مقاضي البنات", "مقاهي وكفيهات"]
+
+# --- دوال الحفظ والتحميل ---
 def load_config():
     if os.path.exists(CONFIG_FILE):
         try:
@@ -34,7 +37,6 @@ def save_config(config):
     except Exception as e:
         st.error(f"حدث خطأ أثناء حفظ الإعدادات: {e}")
 
-# تحميل الإعدادات عند البدء
 if 'app_config' not in st.session_state:
     st.session_state.app_config = load_config()
 
@@ -88,7 +90,7 @@ def save_data(df): df.to_csv(DB_FILE, index=False, encoding='utf-8-sig')
 
 if 'df' not in st.session_state: st.session_state.df = load_data()
 
-# --- 4. الستايل (CSS) ---
+# --- 4. الستايل ---
 st.markdown("""
 <style>
     .card-container {
@@ -166,24 +168,10 @@ with tabs[0]:
         c1, c2, c3, c4 = st.columns(4)
         
         with c1:
-            st.markdown(f"""
-            <div class='card-container' style='background:#bfdbfe;'>
-                <div class='card-icon'>💰</div>
-                <div class='text-content'>
-                    <div class='card-title'>إجمالي الدخل</div>
-                    <div class='val-stroke-white'>{m_inc:,.2f}</div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='card-container' style='background:#bfdbfe;'><div class='card-icon'>💰</div><div class='text-content'><div class='card-title'>إجمالي الدخل</div><div class='val-stroke-white'>{m_inc:,.2f}</div></div></div>""", unsafe_allow_html=True)
             
         with c2:
-            st.markdown(f"""
-            <div class='card-container' style='background:#e9d5ff;'>
-                <div class='card-icon'>💸</div>
-                <div class='text-content'>
-                    <div class='card-title'>مصروفات الشهر</div>
-                    <div class='val-stroke-white'>{m_exp:,.2f}</div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='card-container' style='background:#e9d5ff;'><div class='card-icon'>💸</div><div class='text-content'><div class='card-title'>مصروفات الشهر</div><div class='val-stroke-white'>{m_exp:,.2f}</div></div></div>""", unsafe_allow_html=True)
             
         with c3:
             cls = "val-stroke-green" if m_rem >= 0 else "val-stroke-red"
@@ -204,10 +192,7 @@ with tabs[0]:
         for name, icon, col in [("ماء", "💧", cw), ("الغاز", "🔥", cg), ("الزيت", "🛢️", co)]:
             svc_data = st.session_state.app_config.get("services", {}).get(name, {"date": "---", "note": "---"})
             with col:
-                st.markdown(f"""<div class='svc-box'>
-                    <h2 style='color:white; margin:0;'>{icon} {name}</h2>
-                    <div class='note-text'>📅 {svc_data['date']}<br>📝 {svc_data['note']}</div>
-                </div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div class='svc-box'><h2 style='color:white; margin:0;'>{icon} {name}</h2><div class='note-text'>📅 {svc_data['date']}<br>📝 {svc_data['note']}</div></div>""", unsafe_allow_html=True)
                 with st.popover(f"تعديل {name}"):
                     d_n = st.date_input("التاريخ", date.today(), key=f"d_{name}")
                     n_n = st.text_input("تفاصيل", value=svc_data['note'], key=f"n_{name}")
@@ -219,8 +204,7 @@ with tabs[0]:
         with cgl:
             cur_g = st.session_state.app_config.get("goal", 5000)
             g_clr = "#22c55e" if m_rem >= cur_g else "#ef4444"
-            st.markdown(f"""<div class='svc-box' style='border-color:{g_clr};'>
-            <h2 style='color:white; margin:0;'>🎯 الهدف</h2><h2 style='color:{g_clr}; margin:5px 0;'>{m_rem:,.0f} / {cur_g:,.0f}</h2></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='svc-box' style='border-color:{g_clr};'><h2 style='color:white; margin:0;'>🎯 الهدف</h2><h2 style='color:{g_clr}; margin:5px 0;'>{m_rem:,.0f} / {cur_g:,.0f}</h2></div>""", unsafe_allow_html=True)
             with st.popover("تعديل الهدف"):
                 new_g = st.number_input("الهدف الجديد", value=cur_g, step=500)
                 if st.button("حفظ الهدف"): st.session_state.app_config["goal"] = new_g; save_config(st.session_state.app_config); st.rerun()
@@ -269,17 +253,27 @@ with tabs[1]:
                 save_data(st.session_state.df); st.success(f"✅ تم إضافة {len(new_rows)} عمليات بنجاح! وتم تصفير الخانات."); st.rerun()
             else: st.warning("⚠️ الرجاء تعبئة خانة واحدة على الأقل.")
 
-# --- Tab 4: المقارنات ---
+# --- Tab 4: المقارنات والترند ---
 with tabs[3]:
     if not df.empty:
-        st.subheader("📈 مسار الترند (Trend Line)")
-        target = st.selectbox("🔍 اختر البند:", sorted(df['التصنيف'].unique()))
+        st.subheader("📈 مسار الترند")
+        
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            target = st.selectbox("🔍 اختر البند:", CUSTOM_COMPARE_LIST)
+        with col_t2:
+            chart_type = st.selectbox("📊 شكل الرسم البياني:", ["خطي انسيابي (الحالي)", "أعمدة (Bar)", "مساحي (Area)"])
+            
         item_df = df[df['التصنيف'] == target].copy().sort_values('التاريخ')
         if not item_df.empty:
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='lines+markers',
-                                    line=dict(color='#3b82f6', width=5, shape='spline'),
-                                    marker=dict(size=10, color='white', line=dict(width=2, color='#3b82f6'))))
+            
+            if chart_type == "خطي انسيابي (الحالي)":
+                fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='lines+markers', line=dict(color='#3b82f6', width=5, shape='spline'), marker=dict(size=10, color='white', line=dict(width=2, color='#3b82f6'))))
+            elif chart_type == "أعمدة (Bar)":
+                fig.add_trace(go.Bar(x=item_df['التاريخ'], y=item_df['المبلغ'], marker_color='#3b82f6'))
+            elif chart_type == "مساحي (Area)":
+                fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='lines+markers', fill='tozeroy', line=dict(color='#3b82f6', width=3), marker=dict(size=8, color='white', line=dict(width=2, color='#3b82f6'))))
             
             mx = item_df['المبلغ'].max(); mn = item_df['المبلغ'].min()
             mx_row = item_df[item_df['المبلغ'] == mx].iloc[0]; mn_row = item_df[item_df['المبلغ'] == mn].iloc[0]
@@ -289,25 +283,31 @@ with tabs[3]:
             
             fig.update_layout(template="plotly_dark", height=500)
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info(f"لا توجد بيانات مسجلة للبند: {target}")
 
         st.divider()
         st.subheader("📋 جدول المقارنة")
         pivot = df.pivot_table(index='التصنيف', columns='دورة_الميزانية', values='المبلغ', aggfunc='sum').fillna(0)
-        sel = st.multiselect("حدد العناصر:", pivot.index.tolist(), default=pivot.index.tolist()[:10])
-        if sel: st.dataframe(pivot.loc[sel].style.format("{:,.2f}"), use_container_width=True)
+        
+        # الاعتماد على القائمة المحددة وتحديد المتاح منها
+        avail = [c for c in CUSTOM_COMPARE_LIST if c in pivot.index]
+        sel = st.multiselect("حدد العناصر:", CUSTOM_COMPARE_LIST, default=avail[:10])
+        valid_sel = [x for x in sel if x in pivot.index]
+        
+        if valid_sel: 
+            st.dataframe(pivot.loc[valid_sel].style.format("{:,.2f}"), use_container_width=True)
+        elif sel:
+            st.warning("العناصر المحددة ليس لها بيانات مسجلة في الجداول حتى الآن.")
 
 # --- Tab 5: النسخ الاحتياطي (شامل الخدمات والأهداف) ---
 with tabs[4]:
     st.subheader("⚙️ النسخ الاحتياطي والاستعادة")
-    st.markdown("""
-    <div style='background:rgba(255, 193, 7, 0.1); padding:15px; border-radius:10px; border:1px solid #ffc107; margin-bottom:20px;'>
-    ⚠️ <b>هام جداً:</b> لحفظ بياناتك من الضياع، قم بتحميل ملفات النسخ الاحتياطي (CSV و JSON) بشكل دوري.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""<div style='background:rgba(255, 193, 7, 0.1); padding:15px; border-radius:10px; border:1px solid #ffc107; margin-bottom:20px;'>
+    ⚠️ <b>هام جداً:</b> لحفظ بياناتك من الضياع، قم بتحميل ملفات النسخ الاحتياطي (CSV و JSON) بشكل دوري.</div>""", unsafe_allow_html=True)
     
     col_d1, col_d2 = st.columns(2)
     
-    # 1. نسخ بيانات الأموال (CSV)
     with col_d1:
         st.markdown("### 1️⃣ بيانات الأموال")
         if not df.empty:
@@ -325,10 +325,8 @@ with tabs[4]:
                 st.rerun()
             except: st.error("خطأ في الملف")
 
-    # 2. نسخ الملحوظات والأهداف (JSON) - تم التأكيد على هذا الجزء
     with col_d2:
         st.markdown("### 2️⃣ الملحوظات والأهداف (الزيت، الغاز...)")
-        # التأكد من تحميل أحدث نسخة من الكونفيج
         json_str = json.dumps(st.session_state.app_config, indent=4, ensure_ascii=False)
         st.download_button("📥 تحميل الملحوظات (JSON)", data=json_str, file_name=f"notes_goals_{date.today()}.json", mime="application/json")
         
