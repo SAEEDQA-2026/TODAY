@@ -8,7 +8,7 @@ import io, os, json
 import streamlit.components.v1 as components
 
 # --- 1. الإعدادات ---
-st.set_page_config(page_title="المستشار المالي 2026 - v67", layout="wide")
+st.set_page_config(page_title="المستشار المالي 2026 - v68", layout="wide")
 
 DB_FILE = "finance_master_2026.csv"
 CONFIG_FILE = "app_config_persistent.json"
@@ -17,7 +17,6 @@ DAILY_CATS = ["بنزين", "ماء", "الزيت", "الغاز", "السيار�
 INCOME_CATS = ["الراتب", "حساب المواطن", "الدعم السكني", "الاسهم", "مسترجعات", "حقوق خاصة", "العمالة", "انتداب", "اركابات", "أخرى"]
 FIXED_CATS = ["القرض الشخصي", "القرض", "القرض العقاري", "امي", "كفالة", "الاعاشة"]
 
-# القائمة المخصصة لتبويب المقارنات والترند كما طلبت
 CUSTOM_COMPARE_LIST = ["أمي", "الاعاشة", "اركابات", "الاسهم", "الدعم السكني", "الراتب", "السيارة", "العمالة", "القرض الشخصي", "القرض العقاري", "المستشفيات والصيدليات", "بنزين", "ترفيه وحجوزات", "تصليح", "انتداب", "حساب المواطن", "خدمات خارجية", "خضار وفواكه", "ديون", "زكاة", "عناية", "فواتير", "قطات", "كفالة", "مخالفات", "مسترجعات", "مطاعم", "مقاضي البيت", "مقاضي البنات", "مقاهي وكفيهات"]
 
 # --- دوال الحفظ والتحميل ---
@@ -259,21 +258,23 @@ with tabs[3]:
         st.subheader("📈 مسار الترند")
         
         col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            target = st.selectbox("🔍 اختر البند:", CUSTOM_COMPARE_LIST)
-        with col_t2:
-            chart_type = st.selectbox("📊 شكل الرسم البياني:", ["خطي انسيابي (الحالي)", "أعمدة (Bar)", "مساحي (Area)"])
+        with col_t1: target = st.selectbox("🔍 اختر البند:", CUSTOM_COMPARE_LIST)
+        with col_t2: chart_type = st.selectbox("📊 شكل الرسم البياني:", ["خطي انسيابي", "أعمدة (Bar)", "مساحي (Area)", "خطي متدرج (Step)", "نقاط (Scatter)"])
             
         item_df = df[df['التصنيف'] == target].copy().sort_values('التاريخ')
         if not item_df.empty:
             fig = go.Figure()
             
-            if chart_type == "خطي انسيابي (الحالي)":
+            if chart_type == "خطي انسيابي":
                 fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='lines+markers', line=dict(color='#3b82f6', width=5, shape='spline'), marker=dict(size=10, color='white', line=dict(width=2, color='#3b82f6'))))
             elif chart_type == "أعمدة (Bar)":
                 fig.add_trace(go.Bar(x=item_df['التاريخ'], y=item_df['المبلغ'], marker_color='#3b82f6'))
             elif chart_type == "مساحي (Area)":
                 fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='lines+markers', fill='tozeroy', line=dict(color='#3b82f6', width=3), marker=dict(size=8, color='white', line=dict(width=2, color='#3b82f6'))))
+            elif chart_type == "خطي متدرج (Step)":
+                fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='lines+markers', line=dict(color='#3b82f6', width=4, shape='hv'), marker=dict(size=8, color='white', line=dict(width=2, color='#3b82f6'))))
+            elif chart_type == "نقاط (Scatter)":
+                fig.add_trace(go.Scatter(x=item_df['التاريخ'], y=item_df['المبلغ'], mode='markers', marker=dict(size=14, color='#3b82f6', line=dict(width=2, color='white'))))
             
             mx = item_df['المبلغ'].max(); mn = item_df['المبلغ'].min()
             mx_row = item_df[item_df['المبلغ'] == mx].iloc[0]; mn_row = item_df[item_df['المبلغ'] == mn].iloc[0]
@@ -290,17 +291,25 @@ with tabs[3]:
         st.subheader("📋 جدول المقارنة")
         pivot = df.pivot_table(index='التصنيف', columns='دورة_الميزانية', values='المبلغ', aggfunc='sum').fillna(0)
         
-        # الاعتماد على القائمة المحددة وتحديد المتاح منها
-        avail = [c for c in CUSTOM_COMPARE_LIST if c in pivot.index]
-        sel = st.multiselect("حدد العناصر:", CUSTOM_COMPARE_LIST, default=avail[:10])
-        valid_sel = [x for x in sel if x in pivot.index]
+        # فلترة الأشهر وإنشاء أعمدة جديدة تلقائياً
+        all_months = sorted(list(pivot.columns), key=lambda x: datetime.strptime(x, "%m-%Y") if x != "None" else datetime.min)
+        avail_items = [c for c in CUSTOM_COMPARE_LIST if c in pivot.index]
         
-        if valid_sel: 
-            st.dataframe(pivot.loc[valid_sel].style.format("{:,.2f}"), use_container_width=True)
-        elif sel:
+        col_m1, col_m2 = st.columns(2)
+        with col_m1: sel_items = st.multiselect("حدد العناصر:", CUSTOM_COMPARE_LIST, default=avail_items[:10])
+        with col_m2: sel_months = st.multiselect("📅 حدد الأشهر للمقارنة:", all_months, default=all_months)
+        
+        valid_sel = [x for x in sel_items if x in pivot.index]
+        
+        if valid_sel and sel_months: 
+            display_df = pivot.loc[valid_sel, sel_months]
+            st.dataframe(display_df.style.format("{:,.2f}"), use_container_width=True)
+        elif not sel_months:
+            st.warning("الرجاء تحديد شهر واحد على الأقل للعرض.")
+        elif sel_items:
             st.warning("العناصر المحددة ليس لها بيانات مسجلة في الجداول حتى الآن.")
 
-# --- Tab 5: النسخ الاحتياطي (شامل الخدمات والأهداف) ---
+# --- Tab 5: النسخ الاحتياطي ---
 with tabs[4]:
     st.subheader("⚙️ النسخ الاحتياطي والاستعادة")
     st.markdown("""<div style='background:rgba(255, 193, 7, 0.1); padding:15px; border-radius:10px; border:1px solid #ffc107; margin-bottom:20px;'>
