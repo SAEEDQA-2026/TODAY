@@ -8,7 +8,7 @@ import io, os, json
 import streamlit.components.v1 as components
 
 # --- 1. الإعدادات ---
-st.set_page_config(page_title="المستشار المالي 2026 - v68", layout="wide")
+st.set_page_config(page_title="المستشار المالي 2026 - v69", layout="wide")
 
 DB_FILE = "finance_master_2026.csv"
 CONFIG_FILE = "app_config_persistent.json"
@@ -89,7 +89,7 @@ def save_data(df): df.to_csv(DB_FILE, index=False, encoding='utf-8-sig')
 
 if 'df' not in st.session_state: st.session_state.df = load_data()
 
-# --- 4. الستايل ---
+# --- 4. الستايل وتاريخ اليوم ---
 st.markdown("""
 <style>
     .card-container {
@@ -134,14 +134,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def get_hijri():
-    t = date.today()
+    # إصلاح التوقيت: إجبار النظام على استخدام توقيت السعودية (UTC+3) دائماً
+    t = (datetime.utcnow() + timedelta(hours=3)).date()
     h = Gregorian(t.year, t.month, t.day).to_hijri()
     days = {"Saturday":"السبت", "Sunday":"الأحد", "Monday":"الإثنين", "Tuesday":"الثلاثاء", "Wednesday":"الأربعاء", "Thursday":"الخميس", "Friday":"الجمعة"}
     return days.get(t.strftime("%A"),""), f"{t.year}/{t.month:02d}/{t.day:02d} | {h.year}/{h.month:02d}/{h.day:02d}"
 
 d_name, d_full = get_hijri()
+# إضافة الساعة الحية للتصميم
 st.markdown(f"""<div style="background:#0f172a; padding:20px; border-radius:15px; text-align:center; border-bottom:4px solid #3b82f6;">
-<h1 style='color:white; margin:0;'>{d_name}</h1><h2 style='color:#3b82f6; margin:0;'>{d_full}</h2></div>""", unsafe_allow_html=True)
+<h1 style='color:white; margin:0;'>{d_name}</h1>
+<div id="live_clock_v69" style="font-size: 45px; color: #3b82f6; font-weight: bold; margin: 5px 0;">00:00:00</div>
+<h3 style='color:#bfdbfe; margin:0;'>{d_full}</h3></div>""", unsafe_allow_html=True)
+
+# تفعيل الجافاسكربت للساعة
+components.html("<script>function update(){const n=new Date();window.parent.document.getElementById('live_clock_v69').innerHTML=n.toLocaleTimeString('en-GB',{hour12:false});}setInterval(update,1000);update();</script>", height=0)
 
 # --- 5. المنطق ---
 df = st.session_state.df
@@ -291,7 +298,6 @@ with tabs[3]:
         st.subheader("📋 جدول المقارنة")
         pivot = df.pivot_table(index='التصنيف', columns='دورة_الميزانية', values='المبلغ', aggfunc='sum').fillna(0)
         
-        # فلترة الأشهر وإنشاء أعمدة جديدة تلقائياً
         all_months = sorted(list(pivot.columns), key=lambda x: datetime.strptime(x, "%m-%Y") if x != "None" else datetime.min)
         avail_items = [c for c in CUSTOM_COMPARE_LIST if c in pivot.index]
         
